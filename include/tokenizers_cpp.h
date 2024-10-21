@@ -29,6 +29,8 @@ class Tokenizer {
    */
   virtual std::vector<int32_t> Encode(const std::string& text) = 0;
 
+  virtual std::vector<int32_t> Encode(const std::string& text, bool add_special_tokens) = 0;
+
   /*!
    * \brief Encode a batch of texts into ids.
    * \param texts The input texts.
@@ -44,12 +46,17 @@ class Tokenizer {
     return ret;
   }
 
+  virtual std::vector<std::vector<int32_t>> EncodeBatch(const std::vector<std::string>& texts,
+                                                        bool add_special_tokens) = 0;
+
   /*!
    * \brief Decode token ids into text.
    * \param text The token ids.
    * \returns The decoded text.
    */
   virtual std::string Decode(const std::vector<int32_t>& ids) = 0;
+
+  virtual std::string Decode(const std::vector<int32_t>& ids, bool skip_special_tokens) = 0;
 
   /*!
    * \brief Returns the vocabulary size. Special tokens are considered.
@@ -79,31 +86,6 @@ class Tokenizer {
    * \return The created tokenzier.
    */
   static std::unique_ptr<Tokenizer> FromBlobJSON(const std::string& json_blob);
-  /*!
-   * \brief Create BPE tokenizer
-   *
-   * \param vocab_blob The blob that contains vocabs.
-   * \param merges_blob The blob that contains the merges.
-   * \param added_tokens The added tokens.
-   * \return The created tokenizer.
-   */
-  static std::unique_ptr<Tokenizer> FromBlobByteLevelBPE(const std::string& vocab_blob,
-                                                         const std::string& merges_blob,
-                                                         const std::string& added_tokens = "");
-  /*!
-   * \brief Create SentencePiece.
-   *
-   * \param model_blob The blob that contains vocabs.
-   * \return The created tokenizer.
-   */
-  static std::unique_ptr<Tokenizer> FromBlobSentencePiece(const std::string& model_blob);
-  /*!
-   * \brief Create RWKVWorldTokenizer.
-   *
-   * \param model_blob The blob that contains vocabs.
-   * \return The created tokenizer.
-   */
-  static std::unique_ptr<Tokenizer> FromBlobRWKVWorld(const std::string& model_blob);
 };
 
 }  // namespace tokenizers

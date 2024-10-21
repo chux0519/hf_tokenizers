@@ -16,9 +16,9 @@ namespace tokenizers {
 class HFTokenizer : public Tokenizer {
  public:
   explicit HFTokenizer(TokenizerHandle handle) : handle_(handle) {
-    #ifdef COMPILE_WASM_RUNTIME
+#ifdef COMPILE_WASM_RUNTIME
     setenv("TOKENIZERS_PARALLELISM", "false", true);
-    #endif
+#endif
   }
 
   HFTokenizer(const HFTokenizer&) = delete;
@@ -112,11 +112,4 @@ std::unique_ptr<Tokenizer> Tokenizer::FromBlobJSON(const std::string& json) {
   return std::make_unique<HFTokenizer>(tokenizers_new_from_str(json.data(), json.length()));
 }
 
-std::unique_ptr<Tokenizer> Tokenizer::FromBlobByteLevelBPE(const std::string& vocab,
-                                                           const std::string& merges,
-                                                           const std::string& added_tokens) {
-  return std::make_unique<HFTokenizer>(byte_level_bpe_tokenizers_new_from_str(
-      vocab.data(), vocab.length(), merges.data(), merges.length(), added_tokens.data(),
-      added_tokens.length()));
-}
 }  // namespace tokenizers
