@@ -1,9 +1,11 @@
 // A simple C wrapper of tokenzier library
+use core::panic;
 use serde_json::Value;
 use std::{collections::HashMap, str::FromStr};
 use tokenizers::models::bpe::BPE;
 use tokenizers::pre_tokenizers::byte_level::ByteLevel;
 use tokenizers::tokenizer::Tokenizer;
+use tokenizers::Encoding;
 
 pub struct TokenizerWrapper {
     tokenizer: Tokenizer,
@@ -17,6 +19,7 @@ pub type Merges = Vec<(String, String)>;
 #[repr(C)]
 pub struct TokenizerEncodeResult {
     token_ids: *mut u32,
+    attention_mask: *mut u32,
     len: usize,
 }
 
@@ -86,16 +89,19 @@ impl TokenizerWrapper {
         }
     }
 
-    pub fn encode(&mut self, text: &str, add_special_tokens: bool) -> Vec<u32> {
+    pub fn encode(&mut self, text: &str, add_special_tokens: bool) -> Encoding {
         let encoded = self.tokenizer.encode(text, add_special_tokens).unwrap();
-        return encoded.get_ids().to_vec();
+        return encoded;
     }
 
-    pub fn encode_batch(&mut self, texts: Vec<&str>, add_special_tokens: bool) -> Vec<Vec<u32>> {
-        let results = self.tokenizer.encode_batch(texts, add_special_tokens).unwrap()
+    pub fn encode_batch(&mut self, texts: Vec<&str>, add_special_tokens: bool) -> Vec<Encoding> {
+        let results = self
+            .tokenizer
+            .encode_batch(texts, add_special_tokens)
+            .unwrap()
             .into_iter()
-            .map(|encoded| encoded.get_ids().to_vec())
-            .collect::<Vec<Vec<u32>>>();
+            .map(|encoded| encoded)
+            .collect::<Vec<Encoding>>();
         return results;
     }
 
@@ -150,9 +156,17 @@ extern "C" fn tokenizers_encode(
     unsafe {
         let input_data = std::str::from_utf8(std::slice::from_raw_parts(input_cstr, len)).unwrap();
         let encoded = (*handle).encode(input_data, add_special_tokens != 0);
-        let len = encoded.len();
+        let ids = encoded.get_ids().to_vec();
+        let attention_mask: Vec<u32> = encoded.get_attention_mask().to_vec();
+
+        if ids.len() != attention_mask.len() {
+            panic!("ids and attention_mask should be the same length")
+        }
+        let len = ids.len();
+
         *out_result = TokenizerEncodeResult {
-            token_ids: Box::into_raw(encoded.into_boxed_slice()) as *mut u32,
+            token_ids: Box::into_raw(ids.into_boxed_slice()) as *mut u32,
+            attention_mask: Box::into_raw(attention_mask.into_boxed_slice()) as *mut u32,
             len: len,
         };
     }
@@ -170,14 +184,25 @@ extern "C" fn tokenizers_encode_batch(
     unsafe {
         let input_data = (0..num_seqs)
             .map(|i| {
-                std::str::from_utf8(std::slice::from_raw_parts(*input_cstr.offset(i as isize), *input_len.offset(i as isize))).unwrap()
+                std::str::from_utf8(std::slice::from_raw_parts(
+                    *input_cstr.offset(i as isize),
+                    *input_len.offset(i as isize),
+                ))
+                .unwrap()
             })
             .collect::<Vec<&str>>();
         let encoded_batch = (*handle).encode_batch(input_data, add_special_tokens != 0);
         for (i, encoded) in encoded_batch.into_iter().enumerate() {
-            let len = encoded.len();
+            let ids = encoded.get_ids().to_vec();
+            let attention_mask: Vec<u32> = encoded.get_attention_mask().to_vec();
+            let len = ids.len();
+            if ids.len() != attention_mask.len() {
+                panic!("ids and attention_mask should be the same length")
+            }
+
             let result = TokenizerEncodeResult {
-                token_ids: Box::into_raw(encoded.into_boxed_slice()) as *mut u32,
+                token_ids: Box::into_raw(ids.into_boxed_slice()) as *mut u32,
+                attention_mask: Box::into_raw(attention_mask.into_boxed_slice()) as *mut u32,
                 len: len,
             };
             *out_result.offset(i as isize) = result;
@@ -190,7 +215,14 @@ extern "C" fn tokenizers_free_encode_results(results: *mut TokenizerEncodeResult
     unsafe {
         let slice = std::slice::from_raw_parts_mut(results, num_seqs);
         for result in &mut *slice {
-            drop(Box::from_raw(std::slice::from_raw_parts_mut(result.token_ids, result.len)));
+            drop(Box::from_raw(std::slice::from_raw_parts_mut(
+                result.token_ids,
+                result.len,
+            )));
+            drop(Box::from_raw(std::slice::from_raw_parts_mut(
+                result.attention_mask,
+                result.len,
+            )));
         }
     }
 }
