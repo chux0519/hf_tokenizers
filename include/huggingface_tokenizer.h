@@ -14,6 +14,11 @@ struct HFEncoding {
   std::vector<int32_t> attention_mask;
 };
 
+struct AddedToken {
+  std::string content;
+  int32_t id;
+};
+
 /*!
  * \brief A simple c++ header of tokenizer via C API.
  */
@@ -41,6 +46,8 @@ class HFTokenizer {
 
   size_t GetVocabSize();
 
+  std::vector<AddedToken> GetAddedTokens();
+
   std::string IdToToken(int32_t id);
 
   int32_t TokenToId(const std::string& token);
@@ -49,5 +56,7 @@ class HFTokenizer {
 
  private:
   TokenizerHandle handle_{nullptr};
+  std::vector<AddedToken> added_tokens;
+  void InitAddedTokens();
 };
 }  // namespace tokenizers

@@ -111,8 +111,23 @@ int32_t HFTokenizer::TokenToId(const std::string& token) {
   return id;
 }
 
+void HFTokenizer::InitAddedTokens() {
+  auto cb = [](const char* key, uint32_t value, void* user_data) {
+    HFTokenizer* self = static_cast<HFTokenizer*>(user_data);
+
+    std::string key_str(key);
+    auto cur = AddedToken{key, static_cast<int32_t>(value)};
+    self->added_tokens.push_back(cur);
+  };
+  tokenizers_iterate_added_vocab(handle_, cb, this);
+};
+
+std::vector<AddedToken> HFTokenizer::GetAddedTokens() { return added_tokens; }
+
 std::unique_ptr<HFTokenizer> HFTokenizer::FromBlobJSON(const std::string& json) {
-  return std::make_unique<HFTokenizer>(tokenizers_new_from_str(json.data(), json.length()));
+  auto tok = std::make_unique<HFTokenizer>(tokenizers_new_from_str(json.data(), json.length()));
+  tok->InitAddedTokens();
+  return tok;
 }
 
 }  // namespace tokenizers

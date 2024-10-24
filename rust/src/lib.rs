@@ -1,20 +1,21 @@
 // A simple C wrapper of tokenzier library
 use core::panic;
 use serde_json::Value;
+use std::ffi::CString;
+use std::os::raw::{c_char, c_void};
 use std::{collections::HashMap, str::FromStr};
 use tokenizers::models::bpe::BPE;
 use tokenizers::pre_tokenizers::byte_level::ByteLevel;
 use tokenizers::tokenizer::Tokenizer;
 use tokenizers::Encoding;
 
+type IterateAddedVocabCallback = extern "C" fn(*const c_char, u32, *mut c_void);
+
 pub struct TokenizerWrapper {
     tokenizer: Tokenizer,
     decode_str: String,
     id_to_token_result: String,
 }
-
-pub type Vocab = HashMap<String, u32>;
-pub type Merges = Vec<(String, String)>;
 
 #[repr(C)]
 pub struct TokenizerEncodeResult {
@@ -29,6 +30,14 @@ impl TokenizerWrapper {
             tokenizer: Tokenizer::from_str(json).unwrap().into(),
             decode_str: String::new(),
             id_to_token_result: String::new(),
+        }
+    }
+
+    pub fn iterate_added_vocab(&self, callback: IterateAddedVocabCallback, user_data: *mut c_void) {
+        let special_vocab = self.tokenizer.get_added_vocabulary().get_vocab();
+        for (key, value) in special_vocab {
+            let key_cstring = CString::new(key.as_str()).unwrap();
+            callback(key_cstring.as_ptr(), *value, user_data);
         }
     }
 
@@ -102,6 +111,7 @@ impl TokenizerWrapper {
             .into_iter()
             .map(|encoded| encoded)
             .collect::<Vec<Encoding>>();
+        self.tokenizer.get_added_vocabulary().get_vocab();
         return results;
     }
 
@@ -116,6 +126,15 @@ extern "C" fn tokenizers_new_from_str(input_cstr: *const u8, len: usize) -> *mut
         let json = std::str::from_utf8(std::slice::from_raw_parts(input_cstr, len)).unwrap();
         return Box::into_raw(Box::new(TokenizerWrapper::from_str(json)));
     }
+}
+
+#[no_mangle]
+extern "C" fn tokenizers_iterate_added_vocab(
+    handle: *mut TokenizerWrapper,
+    callback: IterateAddedVocabCallback,
+    user_data: *mut c_void,
+) {
+    unsafe { (*handle).iterate_added_vocab(callback, user_data) }
 }
 
 #[no_mangle]

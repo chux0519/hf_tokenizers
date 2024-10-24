@@ -28,6 +28,9 @@ TokenizerHandle byte_level_bpe_tokenizers_new_from_str(const char* vocab, size_t
                                                        const char* merges, size_t merges_len,
                                                        const char* added_tokens,
                                                        size_t added_tokens_len);
+int tokenizers_iterate_added_vocab(TokenizerHandle handle,
+                                   void (*callback)(const char*, uint32_t, void* user_data),
+                                   void* user_data);
 
 void tokenizers_encode(TokenizerHandle handle, const char* data, size_t len, int add_special_token,
                        TokenizerEncodeResult* result);
