@@ -42,15 +42,12 @@ void HuggingFaceTokenizerExample() {
 
 Currently, the project generates three static libraries
 - `libtokenizers_c.a`: the c binding to tokenizers rust library
-- `libsentencepice.a`: sentencepiece static library
 - `libtokenizers_cpp.a`: the cpp binding implementation
 
 If you are using an IDE, you can likely first use cmake to generate
 these libraries and add them to your development environment.
 If you are using cmake, `target_link_libraries(yourlib tokenizers_cpp)`
-will automatically links in the other two libraries.
-You can also checkout [MLC LLM](https://github.com/mlc-ai/mlc-llm)
-for as an example of complete LLM chat application integrations.
+will automatically links the libraries.
 
 ## Acknowledgements
 
