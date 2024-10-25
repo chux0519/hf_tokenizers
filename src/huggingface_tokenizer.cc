@@ -11,10 +11,6 @@
 #include <cstdint>
 
 namespace tokenizers {
-/*!
- * \brief A simple c++ header of tokenizer via C API.
- */
-
 HFTokenizer::HFTokenizer(TokenizerHandle handle) : handle_(handle) {
 #ifdef COMPILE_WASM_RUNTIME
   setenv("TOKENIZERS_PARALLELISM", "false", true);
