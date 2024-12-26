@@ -24,10 +24,6 @@ typedef struct {
 
 TokenizerHandle tokenizers_new_from_str(const char* json, size_t len);
 
-TokenizerHandle byte_level_bpe_tokenizers_new_from_str(const char* vocab, size_t vocab_len,
-                                                       const char* merges, size_t merges_len,
-                                                       const char* added_tokens,
-                                                       size_t added_tokens_len);
 int tokenizers_iterate_added_vocab(TokenizerHandle handle,
                                    void (*callback)(const char*, uint32_t, void* user_data),
                                    void* user_data);
