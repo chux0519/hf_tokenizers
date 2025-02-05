@@ -56,6 +56,7 @@ elseif (CMAKE_SYSTEM_NAME STREQUAL "Android")
   )
 elseif (CMAKE_SYSTEM_NAME STREQUAL "Windows")
   set(TOKENIZERS_CPP_CARGO_TARGET x86_64-pc-windows-msvc)
+  set(TOKENIZERS_CPP_RUST_FLAGS "-Ctarget-feature=+crt-static")
 endif()
 
 if(WIN32)
