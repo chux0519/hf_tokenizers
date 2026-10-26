@@ -4,6 +4,7 @@ use std::ffi::CString;
 use std::os::raw::{c_char, c_void};
 use std::str::FromStr;
 use tokenizers::tokenizer::{Tokenizer, Result};
+use tokenizers::TruncationParams;
 use tokenizers::Encoding;
 
 type IterateAddedVocabCallback = extern "C" fn(*const c_char, u32, *mut c_void);
@@ -192,6 +193,32 @@ extern "C" fn tokenizers_get_decode_str(
 extern "C" fn tokenizers_free(wrapper: *mut TokenizerWrapper) {
     unsafe {
         drop(Box::from_raw(wrapper));
+    }
+}
+
+/// Current truncation length; 0 when truncation is disabled.
+#[no_mangle]
+extern "C" fn tokenizers_get_truncation(handle: *mut TokenizerWrapper) -> usize {
+    unsafe { (*handle).tokenizer.get_truncation().map_or(0, |t| t.max_length) }
+}
+
+/// Sets the truncation length (keeping direction and strategy), or disables
+/// truncation when max_length is 0. Returns 0 on success.
+#[no_mangle]
+extern "C" fn tokenizers_set_truncation(handle: *mut TokenizerWrapper, max_length: usize) -> i32 {
+    unsafe {
+        let tok = &mut (*handle).tokenizer;
+        let params = if max_length == 0 {
+            None
+        } else {
+            let mut p = tok.get_truncation().cloned().unwrap_or_else(TruncationParams::default);
+            p.max_length = max_length;
+            Some(p)
+        };
+        match tok.with_truncation(params) {
+            Ok(_) => 0,
+            Err(_) => -1,
+        }
     }
 }
 

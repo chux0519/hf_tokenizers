@@ -87,6 +87,12 @@ std::string HFTokenizer::Decode(const std::vector<int32_t>& ids, bool skip_speci
 
 std::string HFTokenizer::Decode(const std::vector<int32_t>& ids) { return Decode(ids, false); }
 
+size_t HFTokenizer::GetTruncation() { return tokenizers_get_truncation(handle_); }
+
+bool HFTokenizer::SetTruncation(size_t max_length) {
+  return tokenizers_set_truncation(handle_, max_length) == 0;
+}
+
 size_t HFTokenizer::GetVocabSize() {
   size_t size;
   tokenizers_get_vocab_size(handle_, &size);

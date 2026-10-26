@@ -51,6 +51,11 @@ void tokenizers_token_to_id(TokenizerHandle handle, const char* token, size_t le
 
 void tokenizers_free(TokenizerHandle handle);
 
+// Truncation length in tokens; 0 means disabled.
+size_t tokenizers_get_truncation(TokenizerHandle handle);
+// Set the truncation length (0 disables). Returns 0 on success.
+int tokenizers_set_truncation(TokenizerHandle handle, size_t max_length);
+
 #ifdef __cplusplus
 }
 #endif

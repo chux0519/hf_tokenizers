@@ -46,6 +46,10 @@ class HFTokenizer {
 
   size_t GetVocabSize();
 
+  // Truncation length in tokens (0 = disabled).
+  size_t GetTruncation();
+  bool SetTruncation(size_t max_length);
+
   std::vector<AddedToken> GetAddedTokens();
 
   std::string IdToToken(int32_t id);
